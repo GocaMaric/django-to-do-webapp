@@ -3,21 +3,17 @@ from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView, FormView
 from django.urls import reverse_lazy
-
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
-
-# Imports for Reordering Feature
 from django.views import View
 from django.shortcuts import redirect
 from django.db import transaction
-
 from .models import Task
 from .forms import PositionForm
 
-
+# Custom login view with redirection
 class CustomLoginView(LoginView):
     template_name = 'base/login.html'
     fields = '__all__'
@@ -26,7 +22,7 @@ class CustomLoginView(LoginView):
     def get_success_url(self):
         return reverse_lazy('tasks')
 
-
+# Registration view with user login
 class RegisterPage(FormView):
     template_name = 'base/register.html'
     form_class = UserCreationForm
@@ -44,32 +40,31 @@ class RegisterPage(FormView):
             return redirect('tasks')
         return super(RegisterPage, self).get(*args, **kwargs)
 
-
+# List view for tasks with user-specific filtering
 class TaskList(LoginRequiredMixin, ListView):
     model = Task
     context_object_name = 'tasks'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tasks'] = context['tasks'].filter(user=self.request.user)
-        context['count'] = context['tasks'].filter(complete=False).count()
+        user_tasks = context['tasks'].filter(user=self.request.user)
+        context['tasks'] = user_tasks
+        context['count'] = user_tasks.filter(complete=False).count()
 
         search_input = self.request.GET.get('search-area') or ''
         if search_input:
-            context['tasks'] = context['tasks'].filter(
-                title__contains=search_input)
+            context['tasks'] = user_tasks.filter(title__contains=search_input)
 
         context['search_input'] = search_input
-
         return context
 
-
+# Detail view for a single task
 class TaskDetail(LoginRequiredMixin, DetailView):
     model = Task
     context_object_name = 'task'
     template_name = 'base/task.html'
 
-
+# Create view for a new task with user assignment
 class TaskCreate(LoginRequiredMixin, CreateView):
     model = Task
     fields = ['title', 'description', 'complete']
@@ -79,29 +74,32 @@ class TaskCreate(LoginRequiredMixin, CreateView):
         form.instance.user = self.request.user
         return super(TaskCreate, self).form_valid(form)
 
-
+# Update view for editing a task
 class TaskUpdate(LoginRequiredMixin, UpdateView):
     model = Task
     fields = ['title', 'description', 'complete']
     success_url = reverse_lazy('tasks')
 
-
+# Delete view for removing a task
 class DeleteView(LoginRequiredMixin, DeleteView):
     model = Task
     context_object_name = 'task'
     success_url = reverse_lazy('tasks')
+    
     def get_queryset(self):
         owner = self.request.user
         return self.model.objects.filter(user=owner)
 
+# View for reordering tasks
 class TaskReorder(View):
     def post(self, request):
         form = PositionForm(request.POST)
 
         if form.is_valid():
-            positionList = form.cleaned_data["position"].split(',')
+            position_list = form.cleaned_data["position"].split(',')
 
             with transaction.atomic():
-                self.request.user.set_task_order(positionList)
+                self.request.user.set_task_order(position_list)
 
         return redirect(reverse_lazy('tasks'))
+
