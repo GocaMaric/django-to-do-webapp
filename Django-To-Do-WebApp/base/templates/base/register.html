@@ -1,27 +1,25 @@
 {% extends 'base/main.html' %}
+
 {% block content %}
+    <div class="header-bar">
+        <h1>Register</h1>
+    </div>
 
-<div class="header-bar">
-    <h1>Register</h1>
-</div>
+    <div class="card-body">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+            {{ form.username }}
+            
+            <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+            {{ form.password1 }}
+            
+            <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+            {{ form.password2 }}
 
-<div class="card-body">
-    <form method="POST">
-        {% csrf_token %}
-        <label>{{form.username.label}}</label>
-        {{form.username}}
-
-        <label>{{form.password1.label}}</label>
-        {{form.password1}}
-
-        <label>{{form.password2.label}}</label>
-        {{form.password2}}
-        <input style="margin-top:10px ;" class="button" type="submit" value="Register">
-    </form>
-    <p>Have an account? Login <a href="{% url 'login' %}"> HERE </a></p>
-</div>
-
-
-
-
+            <input style="margin-top: 10px;" class="button" type="submit" value="Register">
+        </form>
+        <p>Have an account? Login <a href="{% url 'login' %}">HERE</a></p>
+    </div>
 {% endblock content %}
